@@ -16,5 +16,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+
+    - name: Create .env file
+      run: echo "YOUTUBE_API_KEY=" >> .env
+
     - name: Build
       run: cargo build --verbose
