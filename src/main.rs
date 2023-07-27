@@ -3,6 +3,7 @@ mod types;
 mod youtube;
 
 use clap::{Parser, ValueEnum};
+use colored::Colorize;
 use types::MusicClient;
 
 #[derive(Parser)]
@@ -27,6 +28,9 @@ async fn main() {
 
     match cli.mode {
         Mode::SpotifyPlaylistToYoutube => {
+            println!("{}", "Welcome to linksen!".on_bright_green().bold());
+            println!("Mode: {}", "Spotify playlist -> YouTube playlist".green());
+
             let url = cli.url.unwrap();
 
             let spotify = spotify::Spotify::new();

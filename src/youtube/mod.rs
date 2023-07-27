@@ -1,8 +1,8 @@
+use crate::types::{MusicClient, MusicClientType, PlaylistItem};
 use async_trait::async_trait;
+use colored::Colorize;
 use dotenv_codegen::dotenv;
 use serde::{Deserialize, Serialize};
-
-use crate::types::{MusicClient, MusicClientType, PlaylistItem};
 
 #[derive(Serialize, Deserialize)]
 struct YoutubeResponseItemId {
@@ -38,9 +38,13 @@ impl MusicClient for Youtube {
     }
 
     async fn parse_playlist_items(&self, playlist_items: Vec<PlaylistItem>) -> Vec<PlaylistItem> {
+        println!("{}", "Transforming playlist...".yellow());
+
         let mut new_playlist_items = vec![];
 
         for playlist_item in playlist_items.iter() {
+            println!("- changing \"{}\"...", playlist_item.handle);
+
             if let MusicClientType::Youtube = playlist_item.client_type {
                 new_playlist_items.push(playlist_item.clone());
             } else {
@@ -48,6 +52,10 @@ impl MusicClient for Youtube {
                     "https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=1&q={}&key={}",
                     playlist_item.handle, self.api_key
                 );
+
+                let youtube_response = reqwest::get(&url).await.unwrap().text().await.unwrap();
+
+                dbg!(youtube_response);
 
                 let youtube_response = reqwest::get(&url)
                     .await
@@ -69,6 +77,8 @@ impl MusicClient for Youtube {
                 new_playlist_items.push(new_playlist_item);
             }
         }
+
+        println!("{}", "Transformed playlist!".green());
 
         return new_playlist_items;
     }

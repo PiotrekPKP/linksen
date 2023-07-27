@@ -1,11 +1,11 @@
+use crate::types::{MusicClient, PlaylistItem};
 use async_trait::async_trait;
+use colored::Colorize;
 use rspotify::{
     model::{PlayableItem, PlaylistId},
     prelude::BaseClient,
     ClientCredsSpotify, Credentials,
 };
-
-use crate::types::{MusicClient, PlaylistItem};
 
 pub struct Spotify {
     client: ClientCredsSpotify,
@@ -27,6 +27,8 @@ impl Spotify {
 #[async_trait]
 impl MusicClient for Spotify {
     async fn get_playlist_items(&self, url: &str) -> Vec<PlaylistItem> {
+        println!("{}", "Loading playlist...".yellow());
+
         let playlist_id = extract_playlist_id(url).unwrap();
         let playlist_id = PlaylistId::from_id(playlist_id).unwrap();
 
@@ -75,6 +77,8 @@ impl MusicClient for Spotify {
             })
             .flat_map(|playlist_item| playlist_item)
             .collect::<Vec<_>>();
+
+        println!("{}", "Playlist loaded!".green());
 
         return playlist_items;
     }
