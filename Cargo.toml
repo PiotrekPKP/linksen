@@ -1,0 +1,17 @@
+[package]
+name = "linksen"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+async-trait = "0.1.72"
+clap = { version = "4.3.19", features = ["derive"] }
+dotenv = "0.15.0"
+dotenv_codegen = "0.15.0"
+reqwest = { version = "0.11.18", features = ["json", "serde_json"] }
+rspotify = { version = "0.11.7", default-features = false, features = ["client-reqwest", "reqwest-native-tls", "env-file"] }
+serde = { version = "1.0.176", features = ["derive"] }
+serde_json = "1.0.104"
+tokio = { version = "1.29.1", features = ["rt-multi-thread", "macros", "io-util"] }
