@@ -11,11 +11,13 @@ env:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v3
+
+    - name: Cache dependencies
+      uses: Swatinem/rust-cache@v2.2.1
 
     - name: Create .env file
       run: echo "YOUTUBE_API_KEY=" >> .env
