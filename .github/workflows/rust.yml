@@ -16,7 +16,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Cache dependencies
+    - name: Cache
       uses: Swatinem/rust-cache@v2.2.1
 
     - name: Create .env file
