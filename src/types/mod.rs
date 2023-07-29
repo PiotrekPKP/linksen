@@ -98,4 +98,6 @@ pub struct PlaylistItem {
 pub trait MusicClient {
     async fn get_playlist_items(&self, url: &str) -> Vec<PlaylistItem>;
     async fn parse_playlist_items(&self, playlist_items: Vec<PlaylistItem>) -> Vec<PlaylistItem>;
+    async fn search(&self, query: &String) -> Option<String>;
+    async fn create_playlist(&self, playlist_items: &Vec<PlaylistItem>);
 }

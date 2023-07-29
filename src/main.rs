@@ -43,8 +43,8 @@ async fn main() {
 
             let playlist_items = spotify.get_playlist_items(&url).await;
 
-            let youtube = youtube::Youtube::new();
-            //let playlist_items = youtube.parse_playlist_items(playlist_items).await;
+            let mut youtube = youtube::Youtube::new();
+            let playlist_items = youtube.parse_playlist_items(playlist_items).await;
 
             println!();
             print!("Do you want to create a playlist? [Y/n] ");
@@ -55,6 +55,9 @@ async fn main() {
 
             if input.trim() == "Y" || input.trim() == "y" || input.trim() == "" {
                 println!("{}", "Creating playlist...".yellow());
+
+                youtube.init_api_hub().await;
+                youtube.create_playlist(&playlist_items).await;
             }
         }
         Mode::SearchYoutube => {

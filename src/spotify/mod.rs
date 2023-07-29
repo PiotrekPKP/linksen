@@ -1,12 +1,12 @@
 use crate::types::{MusicClient, PlaylistItem, PlaylistItemId};
 use async_trait::async_trait;
 use colored::Colorize;
+use dotenv_codegen::dotenv;
 use rspotify::{
     model::{PlayableItem, PlaylistId},
     prelude::BaseClient,
     ClientCredsSpotify, Credentials,
 };
-
 pub struct Spotify {
     client: ClientCredsSpotify,
 }
@@ -84,6 +84,14 @@ impl MusicClient for Spotify {
 
     async fn parse_playlist_items(&self, playlist_items: Vec<PlaylistItem>) -> Vec<PlaylistItem> {
         playlist_items
+    }
+
+    async fn search(&self, query: &String) -> Option<String> {
+        unimplemented!()
+    }
+
+    async fn create_playlist(&self, playlist_items: &Vec<PlaylistItem>) {
+        unimplemented!()
     }
 }
 
