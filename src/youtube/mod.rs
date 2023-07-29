@@ -1,33 +1,50 @@
-use crate::types::{MusicClient, MusicClientType, PlaylistItem};
+use crate::types::{
+    MusicClient, PlaylistItem, PlaylistItemId, YoutubeResponse,
+    YoutubeResponseItemSectionRendererContent, YoutubeResponseSectionListRendererContent,
+};
 use async_trait::async_trait;
 use colored::Colorize;
-use dotenv_codegen::dotenv;
-use serde::{Deserialize, Serialize};
+use regex::Regex;
 
-#[derive(Serialize, Deserialize)]
-struct YoutubeResponseItemId {
-    #[serde(rename = "videoId")]
-    video_id: String,
-}
-
-#[derive(Serialize, Deserialize)]
-struct YoutubeResponseItem {
-    id: YoutubeResponseItemId,
-}
-
-#[derive(Serialize, Deserialize)]
-struct YoutubeResponse {
-    items: Vec<YoutubeResponseItem>,
-}
-
-pub struct Youtube {
-    api_key: String,
-}
+pub struct Youtube;
 
 impl Youtube {
     pub fn new() -> Self {
-        let api_key = dotenv!("YOUTUBE_API_KEY").to_string();
-        return Self { api_key };
+        return Self;
+    }
+
+    pub async fn search(&self, query: &String) -> Option<String> {
+        let url = format!("https://www.youtube.com/results?search_query={}", query);
+
+        let youtube_response = reqwest::get(&url).await.unwrap().text().await.unwrap();
+        let initial_data = extract_yt_initial_data(&youtube_response).unwrap();
+
+        let youtube_response: YoutubeResponse = serde_json::from_str(&initial_data).unwrap();
+
+        let section_content = &youtube_response
+            .contents
+            .two_column_search_results_renderer
+            .primary_contents
+            .section_list_renderer
+            .contents[0];
+
+        let first_video_id = match section_content {
+            YoutubeResponseSectionListRendererContent::ItemSectionRenderer(
+                item_section_renderer,
+            ) => {
+                let video_renderer = &item_section_renderer.item_section_renderer.contents[0];
+
+                match video_renderer {
+                    YoutubeResponseItemSectionRendererContent::VideoRenderer(video_renderer) => {
+                        Some(video_renderer.video_renderer.video_id.clone())
+                    }
+                    YoutubeResponseItemSectionRendererContent::OtherRenderer(_) => None,
+                }
+            }
+            YoutubeResponseSectionListRendererContent::ContinuationItemRenderer(_) => None,
+        };
+
+        first_video_id
     }
 }
 
@@ -45,36 +62,19 @@ impl MusicClient for Youtube {
         for playlist_item in playlist_items.iter() {
             println!("- changing \"{}\"...", playlist_item.handle);
 
-            if let MusicClientType::Youtube = playlist_item.client_type {
+            if let PlaylistItemId::YouTube(_) = playlist_item.id {
                 new_playlist_items.push(playlist_item.clone());
             } else {
-                let url = format!(
-                    "https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=1&q={}&key={}",
-                    playlist_item.handle, self.api_key
-                );
+                let video_id = self.search(&playlist_item.handle).await;
 
-                let youtube_response = reqwest::get(&url).await.unwrap().text().await.unwrap();
-
-                dbg!(youtube_response);
-
-                let youtube_response = reqwest::get(&url)
-                    .await
-                    .unwrap()
-                    .json::<YoutubeResponse>()
-                    .await
-                    .unwrap();
-
-                let video_id = youtube_response.items[0].id.video_id.clone();
-
-                let new_playlist_item = PlaylistItem {
-                    client_type: MusicClientType::Youtube,
-                    id: video_id,
-                    name: playlist_item.name.clone(),
-                    artists: playlist_item.artists.clone(),
-                    handle: playlist_item.handle.clone(),
-                };
-
-                new_playlist_items.push(new_playlist_item);
+                if let Some(video_id) = video_id {
+                    new_playlist_items.push(PlaylistItem {
+                        id: PlaylistItemId::YouTube(video_id),
+                        name: playlist_item.name.clone(),
+                        handle: playlist_item.handle.clone(),
+                        artists: playlist_item.artists.clone(),
+                    })
+                }
             }
         }
 
@@ -82,4 +82,16 @@ impl MusicClient for Youtube {
 
         return new_playlist_items;
     }
+}
+
+fn extract_yt_initial_data(input: &str) -> Option<String> {
+    let re = Regex::new(r#"var ytInitialData = (.*?)};"#).unwrap();
+
+    if let Some(captured) = re.captures(input) {
+        if let Some(matched_text) = captured.get(1) {
+            return Some(format!("{}}}", matched_text.as_str().to_string()));
+        }
+    }
+
+    None
 }

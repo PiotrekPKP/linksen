@@ -1,4 +1,4 @@
-use crate::types::{MusicClient, PlaylistItem};
+use crate::types::{MusicClient, PlaylistItem, PlaylistItemId};
 use async_trait::async_trait;
 use colored::Colorize;
 use rspotify::{
@@ -45,7 +45,7 @@ impl MusicClient for Spotify {
                         match playable {
                             PlayableItem::Track(track) => {
                                 let id = if let Some(track_id) = &track.id {
-                                    track_id.to_string()
+                                    PlaylistItemId::Spotify(track_id.to_string())
                                 } else {
                                     return None;
                                 };
@@ -61,7 +61,6 @@ impl MusicClient for Spotify {
                                 let handle = format!("{} - {}", name, artists);
 
                                 return Some(PlaylistItem {
-                                    client_type: crate::types::MusicClientType::Spotify,
                                     id,
                                     name,
                                     artists,
