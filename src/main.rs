@@ -33,8 +33,9 @@ async fn main() {
 
     match cli.mode {
         Mode::SpotifyPlaylistToYoutube => {
-            println!("{}", "Welcome to linksen!".on_bright_green().bold());
-            println!("Mode: {}", "Spotify playlist -> YouTube playlist".green());
+            println!("{}", "Welcome to linksen!".on_blue().black());
+            println!("Mode: {}", "Spotify playlist -> YouTube playlist".blue());
+            println!();
 
             let url = cli.url.unwrap();
 
@@ -42,6 +43,8 @@ async fn main() {
             spotify.authenticate().await;
 
             let playlist_items = spotify.get_playlist_items(&url).await;
+
+            println!();
 
             let mut youtube = youtube::Youtube::new();
             let playlist_items = youtube.parse_playlist_items(playlist_items).await;
@@ -53,11 +56,26 @@ async fn main() {
             let mut input = String::new();
             std::io::stdin().read_line(&mut input).unwrap();
 
-            if input.trim() == "Y" || input.trim() == "y" || input.trim() == "" {
-                println!("{}", "Creating playlist...".yellow());
+            if input.trim().to_lowercase() == "yes"
+                || input.trim().to_lowercase() == "y"
+                || input.trim() == ""
+            {
+                println!();
+                println!("{}", "Creating playlist".on_green().black());
 
                 youtube.init_api_hub().await;
                 youtube.create_playlist(&playlist_items).await;
+            } else {
+                println!();
+                println!("{}", "Playlist items".on_green().black());
+
+                for playlist_item in playlist_items {
+                    println!(
+                        "{}: {}",
+                        playlist_item.name.green(),
+                        playlist_item.id.to_string().blue()
+                    );
+                }
             }
         }
         Mode::SearchYoutube => {

@@ -16,6 +16,7 @@ use google_youtube3::{
     oauth2::{ApplicationSecret, InstalledFlowAuthenticator, InstalledFlowReturnMethod},
     YouTube as YouTubeAPI,
 };
+use indicatif::{ProgressBar, ProgressStyle};
 use regex::Regex;
 use std::io::Write;
 
@@ -81,10 +82,17 @@ impl MusicClient for Youtube {
     async fn parse_playlist_items(&self, playlist_items: Vec<PlaylistItem>) -> Vec<PlaylistItem> {
         println!("{}", "Transforming playlist...".yellow());
 
+        let pb = ProgressBar::new(playlist_items.len() as u64);
+        pb.set_style(
+            ProgressStyle::with_template("{bar:40.cyan/blue} {pos:>7}/{len:7} {msg}")
+                .unwrap()
+                .progress_chars("##-"),
+        );
+
         let mut new_playlist_items = vec![];
 
         for playlist_item in playlist_items.iter() {
-            println!("- changing \"{}\"...", playlist_item.handle);
+            pb.set_message(format!("{}", playlist_item.name));
 
             if let PlaylistItemId::YouTube(_) = playlist_item.id {
                 new_playlist_items.push(playlist_item.clone());
@@ -100,9 +108,11 @@ impl MusicClient for Youtube {
                     })
                 }
             }
+
+            pb.inc(1);
         }
 
-        println!("{}", "Transformed playlist!".green());
+        pb.finish_with_message(format!("{}", "Transformed playlist!".green()));
 
         return new_playlist_items;
     }
@@ -169,6 +179,9 @@ impl MusicClient for Youtube {
             playlist_name = Some(input.trim().to_string());
         }
 
+        print!("{}", "Creating playlist... ".yellow());
+        let _ = std::io::stdout().flush();
+
         let hub = self.hub.as_ref().unwrap();
 
         let (_, new_playlist) = hub
@@ -204,6 +217,8 @@ impl MusicClient for Youtube {
                     .unwrap();
             }
         }
+
+        println!("{}", "Created playlist!".green());
     }
 }
 

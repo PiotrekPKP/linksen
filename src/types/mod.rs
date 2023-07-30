@@ -86,6 +86,15 @@ pub enum PlaylistItemId {
     YouTube(String),
 }
 
+impl ToString for PlaylistItemId {
+    fn to_string(&self) -> std::string::String {
+        match self {
+            PlaylistItemId::Spotify(id) => format!("https://open.spotify.com/track/{}", id),
+            PlaylistItemId::YouTube(id) => format!("https://www.youtube.com/watch?v={}", id),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct PlaylistItem {
     pub id: PlaylistItemId,
