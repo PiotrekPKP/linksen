@@ -8,23 +8,20 @@ use std::io::Write;
 use types::MusicClient;
 
 #[derive(Parser)]
-#[command(version)]
 struct Cli {
+    /// Mode to run the tool in
     #[arg(value_enum)]
     mode: Mode,
 
+    /// Playlist URL
     #[arg(short, long)]
     url: Option<String>,
-
-    #[arg(short, long)]
-    query: Option<String>,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 enum Mode {
     SpotifyPlaylistToYoutube,
     YoutubePlaylistToSpotify,
-    SearchYoutube,
 }
 
 #[tokio::main]
@@ -76,24 +73,6 @@ async fn main() {
                         playlist_item.id.to_string().blue()
                     );
                 }
-            }
-        }
-        Mode::SearchYoutube => {
-            println!("{}", "Welcome to linksen!".on_bright_green().bold());
-            println!("Mode: {}", "Search YouTube".green());
-
-            let query = cli.query.unwrap();
-
-            let youtube = youtube::Youtube::new();
-            let search_result = youtube.search(&query).await;
-
-            if let Some(video_id) = search_result {
-                println!(
-                    "Found a video! URL: {}",
-                    format!("https://www.youtube.com/watch?v={}", video_id).green()
-                );
-            } else {
-                println!("{}", "No videos found :(".red());
             }
         }
         Mode::YoutubePlaylistToSpotify => {
