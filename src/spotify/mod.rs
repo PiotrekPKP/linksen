@@ -1,26 +1,36 @@
 use crate::types::{MusicClient, PlaylistItem, PlaylistItemId};
 use async_trait::async_trait;
 use colored::Colorize;
+use indicatif::{ProgressBar, ProgressStyle};
 use rspotify::{
-    model::{PlayableItem, PlaylistId},
-    prelude::BaseClient,
-    ClientCredsSpotify, Credentials,
+    model::{PlayableItem, PlaylistId, SearchResult},
+    prelude::{BaseClient, OAuthClient},
+    scopes, AuthCodeSpotify, Credentials, OAuth,
 };
-use std::io::Write;
+
 pub struct Spotify {
-    client: ClientCredsSpotify,
+    client: AuthCodeSpotify,
 }
 
 impl Spotify {
     pub fn new() -> Spotify {
         let creds = Credentials::from_env().unwrap();
-        let spotify = ClientCredsSpotify::new(creds);
+        let oauth = OAuth::from_env(scopes!(
+            "playlist-read-private",
+            "playlist-read-collaborative",
+            "playlist-modify-public",
+            "playlist-modify-private"
+        ))
+        .unwrap();
+
+        let spotify = AuthCodeSpotify::new(creds, oauth);
 
         Spotify { client: spotify }
     }
 
     pub async fn authenticate(&self) {
-        self.client.request_token().await.unwrap();
+        let url = self.client.get_authorize_url(false).unwrap();
+        self.client.prompt_for_token(&url).await.unwrap();
     }
 }
 
@@ -83,11 +93,74 @@ impl MusicClient for Spotify {
     }
 
     async fn parse_playlist_items(&self, playlist_items: Vec<PlaylistItem>) -> Vec<PlaylistItem> {
-        playlist_items
+        println!("{}", "Transforming playlist...".yellow());
+
+        let pb = ProgressBar::new(playlist_items.len() as u64);
+        pb.set_style(
+            ProgressStyle::with_template("{bar:40.cyan/blue} {pos:>7}/{len:7} {msg}")
+                .unwrap()
+                .progress_chars("##-"),
+        );
+
+        let mut new_playlist_items = vec![];
+
+        for playlist_item in playlist_items.iter() {
+            pb.set_message(format!("{}", playlist_item.name));
+
+            if let PlaylistItemId::Spotify(_) = playlist_item.id {
+                new_playlist_items.push(playlist_item.clone());
+            } else {
+                let video_id = self.search(&playlist_item.handle).await;
+
+                if let Some(video_id) = video_id {
+                    new_playlist_items.push(PlaylistItem {
+                        id: PlaylistItemId::Spotify(video_id),
+                        name: playlist_item.name.clone(),
+                        handle: playlist_item.handle.clone(),
+                        artists: playlist_item.artists.clone(),
+                    })
+                }
+            }
+
+            pb.inc(1);
+        }
+
+        pb.finish_with_message(format!("{}", "Transformed playlist!".green()));
+
+        return new_playlist_items;
     }
 
     async fn search(&self, query: &String) -> Option<String> {
-        unimplemented!()
+        let search_result = self
+            .client
+            .search(
+                query,
+                rspotify::model::SearchType::Track,
+                None,
+                None,
+                Some(1),
+                None,
+            )
+            .await;
+
+        if let Ok(search_result) = search_result {
+            return match search_result {
+                SearchResult::Tracks(tracks_page) => {
+                    if let Some(item) = tracks_page.items.first() {
+                        if let Some(id) = &item.id {
+                            Some(id.to_string().replace("spotify:track:", ""))
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    }
+                }
+                _ => None,
+            };
+        }
+
+        return None;
     }
 
     async fn create_playlist(&self, playlist_items: &Vec<PlaylistItem>) {

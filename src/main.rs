@@ -76,7 +76,51 @@ async fn main() {
             }
         }
         Mode::YoutubePlaylistToSpotify => {
-            unimplemented!("youtube-playlist-to-spotify mode is not implemented yet")
+            println!("{}", "Welcome to linksen!".on_blue().black());
+            println!("Mode: {}", "YouTube playlist -> Spotify playlist".blue());
+            println!();
+
+            let url = cli.url.unwrap();
+
+            let mut youtube = youtube::Youtube::new();
+            youtube.init_api_hub().await;
+
+            let playlist_items = youtube.get_playlist_items(&url).await;
+
+            println!();
+
+            let spotify = spotify::Spotify::new();
+            spotify.authenticate().await;
+
+            let playlist_items = spotify.parse_playlist_items(playlist_items).await;
+
+            println!();
+            print!("Do you want to create a playlist? [Y/n] ");
+            let _ = std::io::stdout().flush();
+
+            let mut input = String::new();
+            std::io::stdin().read_line(&mut input).unwrap();
+
+            if input.trim().to_lowercase() == "yes"
+                || input.trim().to_lowercase() == "y"
+                || input.trim() == ""
+            {
+                println!();
+                println!("{}", "Creating playlist".on_green().black());
+
+                spotify.create_playlist(&playlist_items).await;
+            } else {
+                println!();
+                println!("{}", "Playlist items".on_green().black());
+
+                for playlist_item in playlist_items {
+                    println!(
+                        "{}: {}",
+                        playlist_item.name.green(),
+                        playlist_item.id.to_string().blue()
+                    );
+                }
+            }
         }
     }
 }

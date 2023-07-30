@@ -76,7 +76,81 @@ impl Youtube {
 #[async_trait]
 impl MusicClient for Youtube {
     async fn get_playlist_items(&self, url: &str) -> Vec<PlaylistItem> {
-        unimplemented!()
+        if self.hub.is_none() {
+            eprintln!(
+                "{}",
+                "[INTERNAL ERROR] YouTube API has not been initialized!"
+                    .on_red()
+                    .white()
+            );
+
+            exit(1);
+        }
+
+        let hub = self.hub.as_ref().unwrap();
+
+        let (_, playlist_items) = hub
+            .playlist_items()
+            .list(&vec!["snippet".into()])
+            .playlist_id(extract_playlist_id(url).unwrap())
+            .doit()
+            .await
+            .unwrap();
+
+        let playlist_items = playlist_items.items.unwrap();
+
+        let playlist_items = playlist_items
+            .iter()
+            .map(|playlist_item| {
+                let id = if let Some(snippet) = &playlist_item.snippet {
+                    if let Some(res_id) = &snippet.resource_id {
+                        if let Some(video_id) = &res_id.video_id {
+                            Some(PlaylistItemId::YouTube(video_id.clone()))
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                };
+
+                let artists = if let Some(snippet) = &playlist_item.snippet {
+                    if let Some(channel_title) = &snippet.video_owner_channel_title {
+                        Some(channel_title.clone())
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                };
+
+                let name = if let Some(snippet) = &playlist_item.snippet {
+                    if let Some(title) = &snippet.title {
+                        Some(title.clone())
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                };
+
+                if id.is_none() || artists.is_none() || name.is_none() {
+                    return None;
+                }
+
+                return Some(PlaylistItem {
+                    id: id.unwrap(),
+                    artists: artists.unwrap(),
+                    name: name.as_ref().unwrap().clone(),
+                    handle: name.unwrap(),
+                });
+            })
+            .flat_map(|playlist_item| playlist_item)
+            .collect();
+
+        return playlist_items;
     }
 
     async fn parse_playlist_items(&self, playlist_items: Vec<PlaylistItem>) -> Vec<PlaylistItem> {
@@ -220,6 +294,23 @@ impl MusicClient for Youtube {
 
         println!("{}", "Created playlist!".green());
     }
+}
+
+fn extract_playlist_id(url: &str) -> Option<&str> {
+    let prefix = "https://www.youtube.com/playlist?list=";
+    let query_param_prefix = "&";
+
+    if let Some(start_index) = url.find(prefix) {
+        let rest_of_string = &url[start_index + prefix.len()..];
+
+        if let Some(end_index) = rest_of_string.find(query_param_prefix) {
+            return Some(&rest_of_string[..end_index]);
+        } else {
+            return Some(rest_of_string);
+        }
+    }
+
+    return None;
 }
 
 fn extract_yt_initial_data(input: &str) -> Option<String> {
