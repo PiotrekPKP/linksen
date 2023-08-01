@@ -4,33 +4,24 @@ use colored::Colorize;
 use indicatif::{ProgressBar, ProgressStyle};
 use rspotify::{
     model::{PlayableItem, PlaylistId, SearchResult},
-    prelude::{BaseClient, OAuthClient},
-    scopes, AuthCodeSpotify, Credentials, OAuth,
+    prelude::BaseClient,
+    scopes, AuthCodeSpotify, ClientCredsSpotify, Credentials, OAuth,
 };
 
 pub struct Spotify {
-    client: AuthCodeSpotify,
+    client: ClientCredsSpotify,
 }
 
 impl Spotify {
     pub fn new() -> Spotify {
         let creds = Credentials::from_env().unwrap();
-        let oauth = OAuth::from_env(scopes!(
-            "playlist-read-private",
-            "playlist-read-collaborative",
-            "playlist-modify-public",
-            "playlist-modify-private"
-        ))
-        .unwrap();
-
-        let spotify = AuthCodeSpotify::new(creds, oauth);
+        let spotify = ClientCredsSpotify::new(creds);
 
         Spotify { client: spotify }
     }
 
     pub async fn authenticate(&self) {
-        let url = self.client.get_authorize_url(false).unwrap();
-        self.client.prompt_for_token(&url).await.unwrap();
+        self.client.request_token().await.unwrap();
     }
 }
 
@@ -163,7 +154,7 @@ impl MusicClient for Spotify {
         return None;
     }
 
-    async fn create_playlist(&self, playlist_items: &Vec<PlaylistItem>) {
+    async fn create_playlist(&self, _playlist_items: &Vec<PlaylistItem>) {
         unimplemented!()
     }
 }

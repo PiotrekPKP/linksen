@@ -87,6 +87,8 @@ impl MusicClient for Youtube {
             exit(1);
         }
 
+        print!("{}", "Loading playlist... ".yellow());
+
         let hub = self.hub.as_ref().unwrap();
 
         let (_, playlist_items) = hub
@@ -149,6 +151,8 @@ impl MusicClient for Youtube {
             })
             .flat_map(|playlist_item| playlist_item)
             .collect();
+
+        println!("{}", "Playlist loaded!".green());
 
         return playlist_items;
     }

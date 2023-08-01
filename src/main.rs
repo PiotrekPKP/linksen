@@ -95,31 +95,15 @@ async fn main() {
             let playlist_items = spotify.parse_playlist_items(playlist_items).await;
 
             println!();
-            print!("Do you want to create a playlist? [Y/n] ");
-            let _ = std::io::stdout().flush();
+            println!();
+            println!("{}", "Playlist items".on_green().black());
 
-            let mut input = String::new();
-            std::io::stdin().read_line(&mut input).unwrap();
-
-            if input.trim().to_lowercase() == "yes"
-                || input.trim().to_lowercase() == "y"
-                || input.trim() == ""
-            {
-                println!();
-                println!("{}", "Creating playlist".on_green().black());
-
-                spotify.create_playlist(&playlist_items).await;
-            } else {
-                println!();
-                println!("{}", "Playlist items".on_green().black());
-
-                for playlist_item in playlist_items {
-                    println!(
-                        "{}: {}",
-                        playlist_item.name.green(),
-                        playlist_item.id.to_string().blue()
-                    );
-                }
+            for playlist_item in playlist_items {
+                println!(
+                    "{}: {}",
+                    playlist_item.name.green(),
+                    playlist_item.id.to_string().blue()
+                );
             }
         }
     }
