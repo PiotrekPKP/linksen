@@ -29,9 +29,10 @@ impl Youtube {
         return Self { hub: None };
     }
 
-    pub async fn init_api_hub(&mut self) {
-        let client_id = dotenv!("GOOGLE_CLIENT_ID");
-        let client_secret = dotenv!("GOOGLE_CLIENT_SECRET");
+    pub async fn init_api_hub(&mut self, client_id: Option<String>, client_secret: Option<String>) {
+        let client_id = client_id.unwrap_or(dotenv!("GOOGLE_CLIENT_ID").into());
+        let client_secret = client_secret.unwrap_or(dotenv!("GOOGLE_CLIENT_SECRET").into());
+
         let auth_uri = dotenv!("GOOGLE_AUTH_URI");
         let token_uri = dotenv!("GOOGLE_TOKEN_URI");
 

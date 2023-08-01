@@ -16,6 +16,14 @@ struct Cli {
     /// Playlist URL
     #[arg(short, long)]
     url: Option<String>,
+
+    /// Google OAuth Client ID
+    #[arg(long)]
+    google_client_id: Option<String>,
+
+    /// Google OAuth Client Secret
+    #[arg(long)]
+    google_client_secret: Option<String>,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
@@ -60,7 +68,9 @@ async fn main() {
                 println!();
                 println!("{}", "Creating playlist".on_green().black());
 
-                youtube.init_api_hub().await;
+                youtube
+                    .init_api_hub(cli.google_client_id, cli.google_client_secret)
+                    .await;
                 youtube.create_playlist(&playlist_items).await;
             } else {
                 println!();
@@ -83,7 +93,9 @@ async fn main() {
             let url = cli.url.unwrap();
 
             let mut youtube = youtube::Youtube::new();
-            youtube.init_api_hub().await;
+            youtube
+                .init_api_hub(cli.google_client_id, cli.google_client_secret)
+                .await;
 
             let playlist_items = youtube.get_playlist_items(&url).await;
 

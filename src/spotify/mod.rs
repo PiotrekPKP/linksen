@@ -5,7 +5,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 use rspotify::{
     model::{PlayableItem, PlaylistId, SearchResult},
     prelude::BaseClient,
-    scopes, AuthCodeSpotify, ClientCredsSpotify, Credentials, OAuth,
+    ClientCredsSpotify, Credentials,
 };
 
 pub struct Spotify {
